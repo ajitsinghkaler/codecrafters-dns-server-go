@@ -41,20 +41,9 @@ func main() {
 
 		requestID := binary.BigEndian.Uint16(buf[0:2])
 
-		var qr uint16 = 1
-		var opcode uint16 = 0
-		var aa uint16 = 0
-		var tc uint16 = 0
-		var rd uint16 = 0
-		var ra uint16 = 0
-		var z uint16 = 0
-		var rcode uint16 = 0
-
-		flags := (qr << 15) | (opcode << 11) | (aa << 10) | (tc << 9) | (rd << 8) | (ra << 7) | (z << 4) | rcode
-
 		header := DNSHeader{
 			ID:      requestID,
-			Flags:   flags,
+			Flags:   createFlags(1, 0, 0, 0, 0, 0, 0, 0),
 			QDCount: 0,
 			ANCount: 0,
 			NSCount: 0,
@@ -74,4 +63,8 @@ func main() {
 			fmt.Printf("Error: %v\n", err)
 		}
 	}
+}
+
+func createFlags(qr, opcode, aa, tc, rd, ra, z, rcode uint16) uint16 {
+	return (qr << 15) | (opcode << 11) | (aa << 10) | (tc << 9) | (rd << 8) | (ra << 7) | (z << 4) | rcode
 }
