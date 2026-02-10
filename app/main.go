@@ -56,7 +56,7 @@ func main() {
 			continue
 		}
 
-		response := createHeader()
+		response := createHeader(buf)
 		response = append(response, createQuestion()...)
 
 		_, err = udpConn.WriteToUDP(response, source)
@@ -70,10 +70,21 @@ func createFlags(qr, opcode, aa, tc, rd, ra, z, rcode uint16) uint16 {
 	return (qr << 15) | (opcode << 11) | (aa << 10) | (tc << 9) | (rd << 8) | (ra << 7) | (z << 4) | rcode
 }
 
-func createHeader() []byte {
+func createHeader(buf []byte) []byte {
+
+	flag1byte := buf[2]
+
+	opcode := uint16((flag1byte >> 3) & 0x0F)
+
+	rd := uint16(flag1byte & 0x01)
+	var rcode uint16 = 0
+	if opcode != 0 {
+		rcode = 4
+	}
+
 	header := DNSHeader{
-		ID:      1234,
-		Flags:   createFlags(1, 0, 0, 0, 0, 0, 0, 0),
+		ID:      binary.BigEndian.Uint16(buf[0:2]),
+		Flags:   createFlags(1, opcode, 0, 0, rd, 0, 0, rcode),
 		QDCount: 1,
 		ANCount: 1,
 		NSCount: 0,
