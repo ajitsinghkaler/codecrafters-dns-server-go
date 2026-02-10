@@ -58,6 +58,7 @@ func main() {
 
 		response := createHeader(buf)
 		response = append(response, createQuestion()...)
+		response = append(response, createAnswer()...)
 
 		_, err = udpConn.WriteToUDP(response, source)
 		if err != nil {
