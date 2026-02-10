@@ -143,8 +143,8 @@ func createAnswer() []byte {
 	answerRes = append(answerRes, classBuf...)
 
 	TTLbuf := make([]byte, 4)
-	binary.BigEndian.PutUint32(classBuf, answer.TTL)
-	TTLbuf = append(answerRes, TTLbuf...)
+	binary.BigEndian.PutUint32(TTLbuf, answer.TTL)
+	answerRes = append(answerRes, TTLbuf...)
 
 	rdLengthBuf := make([]byte, 2)
 	binary.BigEndian.PutUint16(rdLengthBuf, answer.RDLength)
