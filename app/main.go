@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -20,6 +21,15 @@ type DNSQuestion struct {
 	DName []byte
 	Type  uint16
 	Class uint16
+}
+
+type DNSAnswer struct {
+	DName    []byte
+	Type     uint16
+	Class    uint16
+	TTL      uint32
+	RDLength uint16
+	Data     []byte
 }
 
 func main() {
@@ -65,50 +75,98 @@ func createHeader() []byte {
 		ID:      1234,
 		Flags:   createFlags(1, 0, 0, 0, 0, 0, 0, 0),
 		QDCount: 1,
-		ANCount: 0,
+		ANCount: 1,
 		NSCount: 0,
 		ARCount: 0,
 	}
 
-	response := make([]byte, 12)
-	binary.BigEndian.PutUint16(response[0:2], header.ID)
-	binary.BigEndian.PutUint16(response[2:4], header.Flags)
-	binary.BigEndian.PutUint16(response[4:6], header.QDCount)
-	binary.BigEndian.PutUint16(response[6:8], header.ANCount)
-	binary.BigEndian.PutUint16(response[8:10], header.NSCount)
-	binary.BigEndian.PutUint16(response[10:12], header.ARCount)
-	return response
+	headerRes := make([]byte, 12)
+	binary.BigEndian.PutUint16(headerRes[0:2], header.ID)
+	binary.BigEndian.PutUint16(headerRes[2:4], header.Flags)
+	binary.BigEndian.PutUint16(headerRes[4:6], header.QDCount)
+	binary.BigEndian.PutUint16(headerRes[6:8], header.ANCount)
+	binary.BigEndian.PutUint16(headerRes[8:10], header.NSCount)
+	binary.BigEndian.PutUint16(headerRes[10:12], header.ARCount)
+	return headerRes
 }
 
 func createQuestion() []byte {
-	var response []byte
+	var questionRes []byte
 	question := DNSQuestion{
-		DName: convertStringToUrl("codecrafters.io"),
+		DName: convertStringToUrlBytes("codecrafters.io"),
 		Type:  1,
 		Class: 1,
 	}
 
-	response = append(response, question.DName...)
+	questionRes = append(questionRes, question.DName...)
 	typeBuf := make([]byte, 2)
 	binary.BigEndian.PutUint16(typeBuf, question.Type)
-	response = append(response, typeBuf...)
+	questionRes = append(questionRes, typeBuf...)
 
 	classBuf := make([]byte, 2)
 	binary.BigEndian.PutUint16(classBuf, question.Class)
-	response = append(response, classBuf...)
+	questionRes = append(questionRes, classBuf...)
 
-	return response
+	return questionRes
 }
 
-func convertStringToUrl(url string) []byte {
-	var response []byte
+func createAnswer() []byte {
+	var answerRes []byte
+	answer := DNSAnswer{
+		DName:    convertStringToUrlBytes("codecrafters.io"),
+		Type:     1,
+		Class:    1,
+		TTL:      60,
+		RDLength: 4,
+		Data:     convertIPtoByte("8.8.8.8"),
+	}
+
+	answerRes = append(answerRes, answer.DName...)
+	typeBuf := make([]byte, 2)
+	binary.BigEndian.PutUint16(typeBuf, answer.Type)
+	answerRes = append(answerRes, typeBuf...)
+
+	classBuf := make([]byte, 2)
+	binary.BigEndian.PutUint16(classBuf, answer.Class)
+	answerRes = append(answerRes, classBuf...)
+
+	TTLbuf := make([]byte, 4)
+	binary.BigEndian.PutUint32(classBuf, answer.TTL)
+	TTLbuf = append(answerRes, TTLbuf...)
+
+	rdLengthBuf := make([]byte, 2)
+	binary.BigEndian.PutUint16(rdLengthBuf, answer.RDLength)
+	answerRes = append(answerRes, rdLengthBuf...)
+
+	answerRes = append(answerRes, answer.Data...)
+
+	return answerRes
+}
+
+func convertStringToUrlBytes(url string) []byte {
+	var urlBytes []byte
 	urlParts := strings.Split(url, ".")
 
 	for _, part := range urlParts {
-		response = append(response, byte(len(part)))
+		urlBytes = append(urlBytes, byte(len(part)))
 		urlPartBuf := []byte(part)
-		response = append(response, urlPartBuf...)
+		urlBytes = append(urlBytes, urlPartBuf...)
 	}
-	response = append(response, 0)
-	return response
+	urlBytes = append(urlBytes, 0)
+	return urlBytes
+}
+
+func convertIPtoByte(ip string) []byte {
+	ipParts := strings.Split(ip, ".")
+	var ipBytes []byte
+
+	for _, part := range ipParts {
+		num, err := strconv.Atoi(part)
+		if err != nil {
+			num = 0
+		}
+		ipBytes = append(ipBytes, byte(num))
+	}
+
+	return ipBytes
 }
